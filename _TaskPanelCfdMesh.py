@@ -228,7 +228,7 @@ class _TaskPanelCfdMesh:
             QApplication.setOverrideCursor(Qt.WaitCursor)
             self.consoleMessage("Running {} ...".format(self.mesh_obj.MeshUtility))
             cart_mesh.error = False
-            cmd = CfdTools.makeRunCommand('./Allmesh', cart_mesh.meshCaseDir, source_env=False)
+            cmd = CfdTools.makeRunCommand('./Allmesh', cart_mesh.meshCaseDir, usedocker=CfdTools.DockerContainer.usedocker, source_env=False)
             FreeCAD.Console.PrintMessage("Executing: " + ' '.join(cmd) + "\n")
             env_vars = CfdTools.getRunEnvironment()
             self.mesh_process.start(cmd, env_vars=env_vars)
