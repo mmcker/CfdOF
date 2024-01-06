@@ -246,6 +246,12 @@ class TaskPanelCfdSolverControl:
         QApplication.restoreOverrideCursor()
 
     def killSolverProcess(self):
+        FreeCADGui.doCommand("from CfdOF import CfdConsoleProcess")
+        FreeCADGui.doCommand("cmd = CfdTools.makeRunCommand('killall Allrun', None, source_env=False)")
+        FreeCADGui.doCommand("env_vars = CfdTools.getRunEnvironment()")
+        FreeCADGui.doCommand("kill_process = CfdConsoleProcess.CfdConsoleProcess()\n" +
+                             "kill_process.start(cmd, env_vars=env_vars)\n" +
+                             "kill_process.waitForFinished()\n" )
         self.consoleMessage("Solver manually stopped")
         self.solver_object.Proxy.solver_process.terminate()
         # Note: solverFinished will still be called
