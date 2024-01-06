@@ -484,7 +484,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QTextEdit" name="textEdit_Output">
+      <widget class="QTextBrowser" name="textEdit_Output">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
          <horstretch>0</horstretch>
