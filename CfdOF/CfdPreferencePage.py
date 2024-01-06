@@ -35,7 +35,6 @@ import FreeCAD
 from CfdOF import CfdTools
 import tempfile
 from contextlib import closing
-from xml.sax.saxutils import escape
 
 if FreeCAD.GuiUp:
     import FreeCADGui
@@ -138,6 +137,7 @@ class CfdPreferencePage:
 
         self.form.gb_openfoam.setVisible(platform.system() == 'Windows')
         self.form.gb_paraview.setVisible(platform.system() == 'Windows')
+        self.form.textEdit_Output.setOpenExternalLinks(True)
 
     def __del__(self):
         self.cleanUp()
@@ -190,7 +190,6 @@ class CfdPreferencePage:
         self.setDownloadURLs()
 
     def consoleMessage(self, message="", colour_type=None):
-        message = escape(message)
         message = message.replace('\n', '<br>')
         if colour_type:
             self.console_message += '<font color="{0}">{1}</font><br>'.format(CfdTools.getColour(colour_type), message)
@@ -450,12 +449,15 @@ class CfdPreferencePage:
     def dockerCheckboxClicked(self):
         if CfdTools.docker_container==None:
             CfdTools.docker_container = CfdTools.DockerContainer()
+        if CfdTools.docker_container.docker_cmd==None and self.form.cb_docker_sel.isChecked():
+            self.consoleMessage('This function requires installation of either docker or podman. Please refer to the <a href="https://github.com/jaheyns/CfdOF#docker-container-install">Readme</a> for details.\
+            \nNote on Linux systems the local user needs to have permission to run docker.\nRefer to the docker installation instructions for details.')
+            self.form.cb_docker_sel.setCheckState(Qt.Unchecked)
         CfdTools.docker_container.usedocker = self.form.cb_docker_sel.isChecked()
         self.form.pb_download_install_docker.setEnabled(CfdTools.docker_container.usedocker)
         self.form.pb_download_install_openfoam.setEnabled(not CfdTools.docker_container.usedocker)
         self.form.pb_download_install_hisa.setEnabled(not CfdTools.docker_container.usedocker)
         self.form.pb_download_install_cfMesh.setEnabled(not CfdTools.docker_container.usedocker)
-        self.form.gb_docker.setVisible(CfdTools.docker_container.docker_cmd!=None or CfdTools.docker_container.usedocker)
 
     def downloadInstallDocker(self):
         # Set foam dir and output dir in preparation for using docker
