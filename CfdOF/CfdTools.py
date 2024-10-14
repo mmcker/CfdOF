@@ -494,7 +494,7 @@ def startDocker():
     if docker_container==None:
         docker_container = DockerContainer()
     if docker_container.container_id==None:
-        if "podman" in docker_container.docker_cmd:
+        if "podman" in docker_container.docker_cmd and getFoamRuntime() == "WindowsDocker": 
             # Start podman machine if not already started
             exit_code = checkPodmanMachineRunning()
             if exit_code==2:
@@ -858,8 +858,8 @@ def makeRunCommand(cmd, dir=None, source_env=True):
             print("Output path changed - restarting container")
             docker_container.stop_container()
             docker_container.start_container()
-        if platform.system() == 'Windows' and FreeCAD.ParamGet(prefs).GetString("DefaultOutputPath", "")[:5]=='\\\\wsl' and cmd[:5] == './All':
-            cmd = 'chmod 744 {0} && {0}'.format(cmd)  # If using windows wsl$ output directory, need to make the command executable
+        if platform.system() == 'Windows' and FreeCAD.ParamGet(prefs).GetString("DefaultOutputPath", "")[:5]=='\\\\wsl' and cmd[:5] == './All': #***
+            cmd = 'chmod 644 {0} && {0}'.format(cmd)  # If using windows wsl$ output directory, need to make the command executable
         cmdline = [docker_container.docker_cmd, 'exec', docker_container.container_id, 'bash', '-c', source + cd + cmd]
         return cmdline
 
@@ -1846,7 +1846,12 @@ class DockerContainer:
             if len(out_d)>2 and out_d[2][:3] == 'wsl':
                 output_path = '/' + '/'.join(out_d[4:])
 
-        cmd = "{0} run -t -d -u 1000:1000 -v {1}:/tmp {2}".format(self.docker_cmd, output_path, self.image_name)
+        if platform.system() == 'Windows':
+            usr_str = "-u 1000:1000"
+        else:
+            usr_str = "-u {}:{}".format(os.getuid(),os.getgid())
+
+        cmd = "{0} run -t -d --userns=keep-id --security-opt label=disable {3} -v {1}:/tmp {2}".format(self.docker_cmd, output_path, self.image_name,usr_str)
 
         if 'docker' in self.docker_cmd:
             cmd = cmd.replace('docker.io/','')
