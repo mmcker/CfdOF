@@ -1851,7 +1851,7 @@ class DockerContainer:
         else:
             usr_str = "-u {}:{}".format(os.getuid(),os.getgid())
 
-        if 'podman' in self.docker_cmd:
+        if 'podman' in self.docker_cmd and platform.system() == 'Linux':
             podman_opts = '--userns=keep-id --security-opt label=disable'
         else:
             podman_opts = ''
