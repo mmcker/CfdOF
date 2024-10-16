@@ -494,8 +494,8 @@ def startDocker():
     if docker_container==None:
         docker_container = DockerContainer()
     if docker_container.container_id==None:
-        if "podman" in docker_container.docker_cmd:
-            # Start podman machine if not already started
+        if "podman" in docker_container.docker_cmd and platform.system() != "Linux":
+            # Start podman machine if not already started, and we are on either MacOS or windows
             exit_code = checkPodmanMachineRunning()
             if exit_code==2:
                 startPodmanMachine()
@@ -1846,7 +1846,17 @@ class DockerContainer:
             if len(out_d)>2 and out_d[2][:3] == 'wsl':
                 output_path = '/' + '/'.join(out_d[4:])
 
-        cmd = "{0} run -t -d -u 1000:1000 -v {1}:/tmp {2}".format(self.docker_cmd, output_path, self.image_name)
+        if platform.system() == 'Windows':
+            usr_str = "-u 1000:1000"
+        else:
+            usr_str = "-u {}:{}".format(os.getuid(),os.getgid())
+
+        if 'podman' in self.docker_cmd:
+            podman_opts = '--userns=keep-id --security-opt label=disable'
+        else:
+            podman_opts = ''
+
+        cmd = "{0} run -t -d {1} {2} -v {3}:/tmp {4}".format(self.docker_cmd, podman_opts, usr_str, output_path, self.image_name)
 
         if 'docker' in self.docker_cmd:
             cmd = cmd.replace('docker.io/','')
