@@ -4,7 +4,8 @@
 # *   Copyright (c) 2017 Oliver Oxtoby (CSIR) <ooxtoby@csir.co.za>          *
 # *   Copyright (c) 2017 Alfred Bogaers (CSIR) <abogaers@csir.co.za>        *
 # *   Copyright (c) 2019-2022 Oliver Oxtoby <oliveroxtoby@gmail.com>        *
-# *                                                                         *
+# *   Copyright (c) 2024 Jonathan Bergh <bergh.jonathan@gmail.com>          *
+# *									    *
 # *   This program is free software: you can redistribute it and/or modify  *
 # *   it under the terms of the GNU Lesser General Public License as        *
 # *   published by the Free Software Foundation, either version 3 of the    *
@@ -29,6 +30,7 @@ if FreeCAD.GuiUp:
     import FreeCADGui
     from PySide import QtCore
 
+from PySide.QtCore import QT_TRANSLATE_NOOP
 
 def makeCfdAnalysis(name):
     """ Create a Cfd Analysis group object """
@@ -44,6 +46,7 @@ class CfdAnalysis:
     """ The CFD analysis group """
     def __init__(self, obj):
         self.loading = False
+        self.ignore_next_grouptouched = False
         obj.Proxy = self
         self.Type = "CfdAnalysis"
         self.initProperties(obj)
@@ -57,12 +60,21 @@ class CfdAnalysis:
         addObjectProperty(obj, 'NeedsMeshRewrite', True, "App::PropertyBool", "", "Mesh setup needs to be re-written")
         addObjectProperty(obj, 'NeedsCaseRewrite', True, "App::PropertyBool", "", "Case setup needs to be re-written")
         addObjectProperty(obj, 'NeedsMeshRerun', True, "App::PropertyBool", "", "Mesher needs to be re-run before running solver")
+        addObjectProperty(obj, 'UseHostfile', False, "App::PropertyBool", "", "Use a hostfile for parallel cluster runs")
+        addObjectProperty(obj, 'HostfileName', "../mpi_hostfile", "App::PropertyString", "", "Hostfile name")
 
     def onDocumentRestored(self, obj):
         self.loading = False
         self.initProperties(obj)
 
     def __setstate__(self, state_dict):
+        self.__dict__ = state_dict
+        # Set while we are loading from file
+        self.loading = True
+
+    # dumps and loads replace __getstate__ and __setstate__ post v. 0.21.2
+
+    def loads(self, state_dict):
         self.__dict__ = state_dict
         # Set while we are loading from file
         self.loading = True
@@ -78,18 +90,25 @@ class _CfdAnalysis:
         # Set while we are loading from file
         self.loading = True
 
+    # dumps and loads replace __getstate__ and __setstate__ post v. 0.21.2
+
+    def loads(self, state_dict):
+        self.__dict__ = state_dict
+        # Set while we are loading from file
+        self.loading = True
+
 
 class CommandCfdAnalysis:
-    """ The Cfd_Analysis command definition """
+    """ The CfdOF_Analysis command definition """
     def __init__(self):
         pass
 
     def GetResources(self):
         icon_path = os.path.join(CfdTools.getModulePath(), "Gui", "Icons", "cfd_analysis.svg")
         return {'Pixmap': icon_path,
-                'MenuText': QtCore.QT_TRANSLATE_NOOP("Cfd_Analysis", "Analysis container"),
+                'MenuText': QT_TRANSLATE_NOOP("CfdOF_Analysis", "Analysis container"),
                 'Accel': "N, C",
-                'ToolTip': QtCore.QT_TRANSLATE_NOOP("Cfd_Analysis", "Creates an analysis container with a CFD solver")}
+                'ToolTip': QT_TRANSLATE_NOOP("CfdOF_Analysis", "Creates an analysis container with a CFD solver")}
 
     def IsActive(self):
         return FreeCAD.ActiveDocument is not None

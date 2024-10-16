@@ -3,7 +3,7 @@
 # *   Copyright (c) 2017-2018 Oliver Oxtoby (CSIR) <ooxtoby@csir.co.za>     *
 # *   Copyright (c) 2017 Johan Heyns (CSIR) <jheyns@csir.co.za>             *
 # *   Copyright (c) 2017 Alfred Bogaers (CSIR) <abogaers@csir.co.za>        *
-# *   Copyright (c) 2019-2023 Oliver Oxtoby <oliveroxtoby@gmail.com>        *
+# *   Copyright (c) 2019-2024 Oliver Oxtoby <oliveroxtoby@gmail.com>        *
 # *                                                                         *
 # *   This program is free software: you can redistribute it and/or modify  *
 # *   it under the terms of the GNU Lesser General Public License as        *
@@ -43,6 +43,7 @@ if FreeCAD.GuiUp:
     from PySide.QtCore import Qt, QObject, QThread
     from PySide.QtGui import QApplication
 
+from PySide.QtCore import QT_TRANSLATE_NOOP
 
 # Constants
 OPENFOAM_URL = \
@@ -157,6 +158,7 @@ class CfdPreferencePage:
         CfdTools.setGmshPath(self.gmsh_path)
         prefs = CfdTools.getPreferencesLocation()
         FreeCAD.ParamGet(prefs).SetString("DefaultOutputPath", self.output_dir)
+        FreeCAD.ParamGet(prefs).SetBool("AppendDocNameToOutputPath",self.form.cb_append_doc_name.isChecked())
         FreeCAD.ParamGet(prefs).SetBool("UseDocker",self.form.cb_docker_sel.isChecked())
         FreeCAD.ParamGet(prefs).SetString("DockerURL",self.form.le_docker_url.text())
 
@@ -178,6 +180,8 @@ class CfdPreferencePage:
 
         self.output_dir = CfdTools.getDefaultOutputPath()
         self.form.le_output_dir.setText(self.output_dir)
+        if FreeCAD.ParamGet(prefs).GetBool("AppendDocNameToOutputPath", 0):
+            self.form.cb_append_doc_name.setCheckState(Qt.Checked)
 
         if FreeCAD.ParamGet(prefs).GetBool("UseDocker", 0):
             self.form.cb_docker_sel.setCheckState(Qt.Checked)
@@ -390,10 +394,16 @@ class CfdPreferencePage:
                             "$WM_PROJECT_USER_DIR/"+CFMESH_FILE_BASE,
                             'log.Allwmake', self.installFinished, stderr_hook=self.stderrFilter)
                     else:
-                        self.install_process = CfdTools.startFoamApplication(
-                            "export WM_NCOMPPROCS=`nproc`; ./Allwmake", 
-                            "$WM_PROJECT_USER_DIR/"+CFMESH_FILE_BASE,
-                            'log.Allwmake', self.installFinished, stderr_hook=self.stderrFilter)
+                        if platform.system() == 'Darwin':
+                            self.install_process = CfdTools.startFoamApplication(
+                                "export WM_NCOMPPROCS=`sysctl -n hw.logicalcpu`; ./Allwmake", 
+                                "$WM_PROJECT_USER_DIR/"+CFMESH_FILE_BASE,
+                                'log.Allwmake', self.installFinished, stderr_hook=self.stderrFilter)
+                        else:
+                            self.install_process = CfdTools.startFoamApplication(
+                                "export WM_NCOMPPROCS=`nproc`; ./Allwmake", 
+                                "$WM_PROJECT_USER_DIR/"+CFMESH_FILE_BASE,
+                                'log.Allwmake', self.installFinished, stderr_hook=self.stderrFilter)
                 else:
                     self.consoleMessage("Install completed")
             # Reset foam dir for now in case the user presses 'Cancel'
@@ -412,10 +422,16 @@ class CfdPreferencePage:
                             "$WM_PROJECT_USER_DIR/"+HISA_FILE_BASE,
                             'log.Allwmake', self.installFinished, stderr_hook=self.stderrFilter)
                     else:
-                        self.install_process = CfdTools.startFoamApplication(
-                            "export WM_NCOMPPROCS=`nproc`; ./Allwmake", 
-                            "$WM_PROJECT_USER_DIR/"+HISA_FILE_BASE,
-                            'log.Allwmake', self.installFinished, stderr_hook=self.stderrFilter)
+                        if platform.system() == 'Darwin':
+                            self.install_process = CfdTools.startFoamApplication(
+                                "export WM_NCOMPPROCS=`sysctl -n hw.logicalcpu`; ./Allwmake", 
+                                "$WM_PROJECT_USER_DIR/"+HISA_FILE_BASE,
+                                'log.Allwmake', self.installFinished, stderr_hook=self.stderrFilter)
+                        else:
+                            self.install_process = CfdTools.startFoamApplication(
+                                "export WM_NCOMPPROCS=`nproc`; ./Allwmake", 
+                                "$WM_PROJECT_USER_DIR/"+HISA_FILE_BASE,
+                                'log.Allwmake', self.installFinished, stderr_hook=self.stderrFilter)
                 else:
                     self.consoleMessage("Install completed")
             # Reset foam dir for now in case the user presses 'Cancel'
@@ -577,9 +593,14 @@ class CfdPreferencePageThread(QThread):
         if CfdTools.getFoamRuntime() == "MinGW":
             self.user_dir = None
             self.signals.status.emit("Installing cfMesh...")
-            CfdTools.runFoamCommand(
-                '{{ mkdir -p "$FOAM_APPBIN" && cd "$FOAM_APPBIN" && unzip -o "{}"; }}'.
-                    format(CfdTools.translatePath(filename)))
+            if CfdTools.getFoamRuntime() == "MinGW":
+                CfdTools.runFoamCommand(
+                    "PowerShell -NoProfile -Command Expand-Archive -Force '{}' '!WM_PROJECT_DIR!\\platforms\\!TYPE!\\bin'".
+                        format(CfdTools.translatePath(filename)))
+            else:
+                CfdTools.runFoamCommand(
+                    '{{ mkdir -p "$FOAM_APPBIN" && cd "$FOAM_APPBIN" && unzip -o "{}"; }}'.
+                        format(CfdTools.translatePath(filename)))
         else:
             self.user_dir = CfdTools.runFoamCommand("echo $WM_PROJECT_USER_DIR")[0].rstrip().split('\n')[-1]
             # We can't reverse-translate the path for docker since it sits inside the container. Just report it as such.
@@ -606,9 +627,14 @@ class CfdPreferencePageThread(QThread):
         if CfdTools.getFoamRuntime() == "MinGW":
             self.user_dir = None
             self.signals.status.emit("Installing HiSA...")
-            CfdTools.runFoamCommand(
-                '{{ mkdir -p "$FOAM_APPBIN" && cd "$FOAM_APPBIN" && unzip -o "{}"; }}'.
-                    format(CfdTools.translatePath(filename)))
+            if CfdTools.getFoamRuntime() == "MinGW":
+                CfdTools.runFoamCommand(
+                    "PowerShell -NoProfile -Command Expand-Archive -Force '{}' '!WM_PROJECT_DIR!\\platforms\\!TYPE!\\bin'".
+                        format(CfdTools.translatePath(filename)))
+            else:
+                CfdTools.runFoamCommand(
+                    '{{ mkdir -p "$FOAM_APPBIN" && cd "$FOAM_APPBIN" && unzip -o "{}"; }}'.
+                        format(CfdTools.translatePath(filename)))
         else:
             self.user_dir = CfdTools.runFoamCommand("echo $WM_PROJECT_USER_DIR")[0].rstrip().split('\n')[-1]
             # We can't reverse-translate the path for docker since it sits inside the container. Just report it as such.

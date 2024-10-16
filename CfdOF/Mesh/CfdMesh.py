@@ -1,6 +1,6 @@
 # ***************************************************************************
 # *                                                                         *
-# *   Copyright (c) 2019-2022 Oliver Oxtoby <oliveroxtoby@gmail.com>        *
+# *   Copyright (c) 2019-2024 Oliver Oxtoby <oliveroxtoby@gmail.com>        *
 # *                                                                         *
 # *   This program is free software: you can redistribute it and/or modify  *
 # *   it under the terms of the GNU Lesser General Public License as        *
@@ -18,8 +18,6 @@
 # *                                                                         *
 # ***************************************************************************
 
-from __future__ import print_function
-
 import FreeCAD
 import FreeCADGui
 from PySide import QtCore
@@ -27,6 +25,7 @@ from CfdOF import CfdTools
 from CfdOF.CfdTools import addObjectProperty
 import os
 
+from PySide.QtCore import QT_TRANSLATE_NOOP
 
 MESHER_DESCRIPTIONS = ['cfMesh', 'snappyHexMesh', 'gmsh (tetrahedral)', 'gmsh (polyhedral)']
 MESHERS = ['cfMesh', 'snappyHexMesh', 'gmsh', 'gmsh']
@@ -46,15 +45,18 @@ class CommandCfdMeshFromShape:
     def GetResources(self):
         icon_path = os.path.join(CfdTools.getModulePath(), "Gui", "Icons", "mesh.svg")
         return {'Pixmap': icon_path,
-                'MenuText': QtCore.QT_TRANSLATE_NOOP("Cfd_MeshFromShape",
+                'MenuText': QT_TRANSLATE_NOOP("CfdOF_MeshFromShape",
                                                      "CFD mesh"),
-                'ToolTip': QtCore.QT_TRANSLATE_NOOP("Cfd_MeshFromShape",
+                'ToolTip': QT_TRANSLATE_NOOP("CfdOF_MeshFromShape",
                                                     "Create a mesh using cfMesh, snappyHexMesh or gmsh")}
 
     def IsActive(self):
         sel = FreeCADGui.Selection.getSelection()
         analysis = CfdTools.getActiveAnalysis()
-        return analysis is not None and sel and len(sel) == 1 and sel[0].isDerivedFrom("Part::Feature")
+        existing_mesh = CfdTools.getMesh(analysis)
+        return existing_mesh is not None or (
+            analysis is not None and sel and len(sel) == 1 and sel[0].isDerivedFrom("Part::Feature") and
+            not sel[0].Shape.isNull())
 
     def Activated(self):
         FreeCAD.ActiveDocument.openTransaction("Create CFD mesh")
@@ -75,7 +77,7 @@ class CommandCfdMeshFromShape:
                                 "CfdTools.getActiveAnalysis().addObject(App.ActiveDocument.ActiveObject)")
                         FreeCADGui.ActiveDocument.setEdit(FreeCAD.ActiveDocument.ActiveObject.Name)
             else:
-                print("ERROR: You cannot have more than one mesh object")
+                FreeCADGui.activeDocument().setEdit(mesh_obj.Name)
         FreeCADGui.Selection.clearSelection()
 
 
@@ -199,15 +201,10 @@ class ViewProviderCfdMesh:
         self.Object = vobj.Object
 
     def updateData(self, obj, prop):
-        gui_doc = FreeCADGui.getDocument(obj.Document)
         analysis_obj = CfdTools.getParentAnalysisObject(obj)
-        num_refinement_objs = CfdTools.getMeshRefinementObjs(obj)
+        num_refinement_objs = len(CfdTools.getMeshRefinementObjs(obj))
         num_dyn_refinement_objs = (0 if CfdTools.getDynamicMeshAdaptation(obj) is None else 1)
-        # Ignore this notification since already accounted for during editing of
-        # properties themselves
-        if prop == "_GroupTouched":
-            return
-        elif prop == "Group":
+        if prop == "Group":
             if analysis_obj and not analysis_obj.Proxy.loading:
                 if num_refinement_objs != self.num_refinement_objs:
                     analysis_obj.NeedsMeshRewrite = True
@@ -218,7 +215,13 @@ class ViewProviderCfdMesh:
             self.num_dyn_refinement_objs = num_dyn_refinement_objs
         else:
             if analysis_obj and not analysis_obj.Proxy.loading:
-                analysis_obj.NeedsMeshRewrite = True
+                if prop == "_GroupTouched":
+                    if (analysis_obj and analysis_obj.Proxy.ignore_next_grouptouched):
+                        analysis_obj.Proxy.ignore_next_grouptouched = False
+                    else:
+                        analysis_obj.NeedsMeshRewrite = True
+                else:
+                    analysis_obj.NeedsMeshRewrite = True
 
     def onChanged(self, vobj, prop):
         CfdTools.setCompSolid(vobj)

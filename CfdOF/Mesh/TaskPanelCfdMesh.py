@@ -41,6 +41,7 @@ if FreeCAD.GuiUp:
     from PySide.QtCore import Qt
     from PySide.QtGui import QApplication
 
+from PySide.QtCore import QT_TRANSLATE_NOOP
 
 class TaskPanelCfdMesh:
     """ The TaskPanel for editing References property of CfdMesh objects and creation of new CFD mesh """
@@ -98,7 +99,7 @@ class TaskPanelCfdMesh:
         self.Timer.start()
 
     def getStandardButtons(self):
-        return int(QtGui.QDialogButtonBox.Close)
+        return QtGui.QDialogButtonBox.Close
         # def reject() is called on close button
 
     def reject(self):
@@ -257,10 +258,10 @@ class TaskPanelCfdMesh:
                 stdout_hook=self.gotOutputLines, stderr_hook=self.gotErrorLines)
             FreeCADGui.doCommand("if proxy.running_from_macro:\n" +
                                  "  proxy.check_mesh_process = CfdConsoleProcess()\n" +
-                                 "  proxy.check_mesh_process.start(cmd, env_vars=env_vars)\n" +
+                                 "  proxy.check_mesh_process.start(cmd, env_vars=env_vars, working_dir=cart_mesh.meshCaseDir)\n" +
                                  "  proxy.check_mesh_process.waitForFinished()\n" +
                                  "else:\n" +
-                                 "  proxy.check_mesh_process.start(cmd, env_vars=env_vars)")
+                                 "  proxy.check_mesh_process.start(cmd, env_vars=env_vars, working_dir=cart_mesh.meshCaseDir)")
             if self.mesh_obj.Proxy.check_mesh_process.waitForStarted():
                 self.consoleMessage("Mesh check started ...")
             else:
@@ -315,16 +316,19 @@ class TaskPanelCfdMesh:
             FreeCADGui.doCommand("proxy = FreeCAD.ActiveDocument." + self.mesh_obj.Name + ".Proxy")
             FreeCADGui.doCommand("proxy.cart_mesh = cart_mesh")
             FreeCADGui.doCommand("cart_mesh.error = False")
-            FreeCADGui.doCommand("cmd = CfdTools.makeRunCommand('./Allmesh', cart_mesh.meshCaseDir, source_env=False)")
+            if CfdTools.getFoamRuntime() == "MinGW":
+                FreeCADGui.doCommand("cmd = CfdTools.makeRunCommand('Allmesh.bat', source_env=False)")
+            else:
+                FreeCADGui.doCommand("cmd = CfdTools.makeRunCommand('./Allmesh', cart_mesh.meshCaseDir, source_env=False)")
             FreeCADGui.doCommand("env_vars = CfdTools.getRunEnvironment()")
             FreeCADGui.doCommand("proxy.running_from_macro = True")
             self.mesh_obj.Proxy.running_from_macro = False
             FreeCADGui.doCommand("if proxy.running_from_macro:\n" +
                                  "  mesh_process = CfdConsoleProcess.CfdConsoleProcess()\n" +
-                                 "  mesh_process.start(cmd, env_vars=env_vars)\n" +
+                                 "  mesh_process.start(cmd, env_vars=env_vars, working_dir=cart_mesh.meshCaseDir)\n" +
                                  "  mesh_process.waitForFinished()\n" +
                                  "else:\n" +
-                                 "  proxy.mesh_process.start(cmd, env_vars=env_vars)")
+                                 "  proxy.mesh_process.start(cmd, env_vars=env_vars, working_dir=cart_mesh.meshCaseDir)")
             if self.mesh_obj.Proxy.mesh_process.waitForStarted():
                 self.form.pb_run_mesh.setEnabled(False)  # Prevent user running a second instance
                 self.form.pb_stop_mesh.setEnabled(True)
@@ -364,6 +368,7 @@ class TaskPanelCfdMesh:
         print_err = self.mesh_obj.Proxy.mesh_process.processErrorOutput(lines)
         if print_err is not None:
             self.consoleMessage(print_err, 'Error')
+            self.check_mesh_error = True
 
     def meshFinished(self, exit_code):
         if exit_code == 0:
@@ -402,7 +407,8 @@ class TaskPanelCfdMesh:
         prev_write_mesh = self.analysis_obj.NeedsMeshRewrite
         self.mesh_obj.Proxy.cart_mesh.loadSurfMesh()
         self.analysis_obj.NeedsMeshRewrite = prev_write_mesh
-        self.consoleMessage('Triangulated representation of the surface mesh is shown - ', timed=False)
+        self.analysis_obj.Proxy.ignore_next_grouptouched = True
+        self.consoleMessage("Triangulated representation of the surface mesh is shown - ", timed=False)
         self.consoleMessage("Please use Paraview for full mesh visualisation.\n", timed=False)
 
     def pbClearMeshClicked(self):
@@ -411,6 +417,7 @@ class TaskPanelCfdMesh:
             if m.isDerivedFrom("Fem::FemMeshObject"):
                 FreeCAD.ActiveDocument.removeObject(m.Name)
         self.analysis_obj.NeedsMeshRewrite = prev_write_mesh
+        self.analysis_obj.Proxy.ignore_next_grouptouched = True
         FreeCAD.ActiveDocument.recompute()
 
     def searchPointInMesh(self):

@@ -41,6 +41,7 @@ www.openfoam.com, and owner of the OPENFOAM® and OpenCFD® trade marks
 * Unit/regression testing
 * Case builder using an extensible template structure
 * Macro scripting
+* Support for distributed parallel (cluster) runs via mpiexec & --hostfile
 
 ### Platforms supported
 
@@ -98,7 +99,7 @@ Note: The CfdOF workbench can be updated at any time through the Addon manager.
 ##### Dependency installation
 
 Dependencies can be checked and installed conveniently from the CfdOF Preferences panel in FreeCAD.
-In the FreeCAD window, select Edit | Preferences ... and choose "CfdOF".  The dependencies can be installed as
+In the FreeCAD window, select CfdOF | Open preferences.  The dependencies can be installed as
 individual components or as part of a docker container (refer to the **Docker container install** section below).
 
 The OpenFOAM installation is via the

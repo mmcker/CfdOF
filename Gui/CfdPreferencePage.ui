@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>560</width>
-    <height>909</height>
+    <height>1069</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -34,6 +34,36 @@
      <property name="verticalSpacing">
       <number>6</number>
      </property>
+     <item row="3" column="1">
+      <widget class="QToolButton" name="tb_choose_paraview_path">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="text">
+        <string>...</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0">
+      <widget class="QLineEdit" name="le_gmsh_path">
+       <property name="toolTip">
+        <string>The full path to the gmsh executable. Leave blank to use the system search path.</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QLineEdit" name="le_paraview_path">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="toolTip">
+        <string>The full path of the ParaView executable. Leave blank to use system search path or default install locations.</string>
+       </property>
+       <property name="readOnly">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
      <item row="0" column="0">
       <widget class="QLabel" name="label_7">
        <property name="font">
@@ -47,13 +77,36 @@
        </property>
       </widget>
      </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="label_7b">
+       <property name="font">
+        <font>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>ParaView executable</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="1">
+      <widget class="QToolButton" name="tb_choose_output_dir">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="text">
+        <string>...</string>
+       </property>
+      </widget>
+     </item>
      <item row="1" column="0">
       <widget class="QLineEdit" name="le_foam_dir">
        <property name="enabled">
         <bool>true</bool>
        </property>
        <property name="toolTip">
-        <string>The OpenFOAM install folder (e.g. 'OpenFOAM-xxx'). Leave blank to use $WM_PROJECT_DIR environment setting or search standard locations.</string>
+        <string>The OpenFOAM install folder. Leave blank to use $WM_PROJECT_DIR environment setting or standard install locations.</string>
        </property>
        <property name="readOnly">
         <bool>false</bool>
@@ -70,6 +123,26 @@
        </property>
       </widget>
      </item>
+     <item row="5" column="1">
+      <widget class="QToolButton" name="tb_choose_gmsh_path">
+       <property name="text">
+        <string>...</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="label_5">
+       <property name="font">
+        <font>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>gmsh executable</string>
+       </property>
+      </widget>
+     </item>
      <item row="6" column="0">
       <widget class="QLabel" name="label_outputdir">
        <property name="font">
@@ -83,85 +156,26 @@
        </property>
       </widget>
      </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="label_7b">
-       <property name="font">
-        <font>
-         <weight>75</weight>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="text">
-        <string>ParaView executable path</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="0">
-      <widget class="QLineEdit" name="le_paraview_path">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="toolTip">
-        <string>The full path of the ParaView executable. Leave blank to use search path.</string>
-       </property>
-       <property name="readOnly">
-        <bool>false</bool>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="QToolButton" name="tb_choose_paraview_path">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="text">
-        <string>...</string>
-       </property>
-      </widget>
-     </item>
-     <item row="7" column="1">
-      <widget class="QToolButton" name="tb_choose_output_dir">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="text">
-        <string>...</string>
-       </property>
-      </widget>
-     </item>
      <item row="7" column="0">
       <widget class="QLineEdit" name="le_output_dir">
        <property name="enabled">
         <bool>true</bool>
        </property>
        <property name="toolTip">
-        <string>The directory to which case folders are written. Used unless overridden on a per-analysis basis.</string>
+        <string>The directory to which case folders are written. Used unless overridden on a per-analysis basis. Use a '.' to denote the location of the current saved document, or leave blank to use a temporary directory.</string>
        </property>
        <property name="readOnly">
         <bool>false</bool>
        </property>
       </widget>
      </item>
-     <item row="4" column="0">
-      <widget class="QLabel" name="label_5">
-       <property name="font">
-        <font>
-         <weight>75</weight>
-         <bold>true</bold>
-        </font>
+     <item row="8" column="0" colspan="2">
+      <widget class="QCheckBox" name="cb_append_doc_name">
+       <property name="toolTip">
+        <string>Create the output in a subdirectory with the name of the current saved document.</string>
        </property>
        <property name="text">
-        <string>gmsh executable path</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="0">
-      <widget class="QLineEdit" name="le_gmsh_path"/>
-     </item>
-     <item row="5" column="1">
-      <widget class="QToolButton" name="tb_choose_gmsh_path">
-       <property name="text">
-        <string>...</string>
+        <string>Append document name to output directory</string>
        </property>
       </widget>
      </item>
@@ -234,7 +248,7 @@
      <item row="5" column="0">
       <widget class="QGroupBox" name="gb_openfoam">
        <property name="title">
-        <string>OpenFOAM</string>
+        <string notr="true">OpenFOAM</string>
        </property>
        <layout class="QGridLayout" name="gridLayout_2">
         <item row="2" column="2">
@@ -279,7 +293,7 @@
      <item row="6" column="0">
       <widget class="QGroupBox" name="gb_paraview">
        <property name="title">
-        <string>ParaView</string>
+        <string notr="true">ParaView</string>
        </property>
        <layout class="QGridLayout" name="gridLayout_2">
         <item row="2" column="2">
@@ -324,7 +338,7 @@
      <item row="7" column="0">
       <widget class="QGroupBox" name="gb_cfmesh">
        <property name="title">
-        <string>cfMesh</string>
+        <string notr="true">cfMesh</string>
        </property>
        <layout class="QGridLayout" name="gridLayout_4">
         <item row="1" column="0">
@@ -369,7 +383,7 @@
      <item row="8" column="0">
       <widget class="QGroupBox" name="gb_hisa">
        <property name="title">
-        <string>HiSA</string>
+        <string notr="true">HiSA</string>
        </property>
        <layout class="QGridLayout" name="gridLayout_4">
         <item row="2" column="2">
@@ -417,14 +431,14 @@
         <string>Docker Container</string>
        </property>
        <layout class="QGridLayout" name="gridLayout_3">
-       <item row="0" column="0">
+        <item row="0" column="0">
          <widget class="QLabel" name="label_2">
           <property name="text">
-           <string>Use docker:</string>
+           <string>Use Docker:</string>
           </property>
-         </widget>		
-       </item>
-       <item row="0" column="1">
+         </widget>
+        </item>
+        <item row="0" column="1">
          <widget class="QCheckBox" name="cb_docker_sel"/>
         </item>
         <item row="1" column="0">
@@ -446,7 +460,7 @@
         </item>
        </layout>
       </widget>
-     </item>   
+     </item>
     </layout>
    </item>
    <item>

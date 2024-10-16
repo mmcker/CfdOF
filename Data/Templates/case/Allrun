@@ -9,8 +9,13 @@ runParallel()
     sol="${sol%.*}"
     shift
     if [ -f log."$sol" ]; then rm log."$sol"; fi
-    export OMPI_MCA_btl_vader_single_copy_mechanism=none  # Workarond for open-mpi/docker bug
+    export OMPI_MCA_btl_vader_single_copy_mechanism=none  # Workaround for open-mpi/docker bug
+%{%(system/hostFileRequired%)
+%:False
     mpiexec -np $nproc "$exe" -parallel "$@" 1> >(tee -a log."$sol") 2> >(tee -a log."$sol" >&2)
+%:True
+    mpiexec --hostfile %(system/hostFileName%) -np $nproc "$exe" -parallel "$@" 1> >(tee -a log."$sol") 2> >(tee -a log."$sol" >&2)
+%}
     err=$?
     if [ ! $err -eq 0 ]; then exit $err; fi
 }
@@ -58,13 +63,14 @@ fi
 
 %{%(dynamicMeshEnabled%)
 %:True
+mkdir -p 0/include
 # Detect availability of 'internal' patch type
 if which foamInfo > /dev/null && foamInfo internalFvPatchField > /dev/null 2>&1
 then
-    echo "type internal;" > 0/helperPatchFieldType
+    echo "type internal;" > 0/include/helperPatchFieldType
     echo "type internal;" > system/helperPatchType
 else
-    echo "type fixedValue;" > 0/helperPatchFieldType
+    echo "type fixedValue;" > 0/include/helperPatchFieldType
     echo "type patch;" > system/helperPatchType
 fi
 

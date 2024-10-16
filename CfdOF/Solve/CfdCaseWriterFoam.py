@@ -3,8 +3,8 @@
 # *   Copyright (c) 2017 Alfred Bogaers (CSIR) <abogaers@csir.co.za>        *
 # *   Copyright (c) 2017 Johan Heyns (CSIR) <jheyns@csir.co.za>             *
 # *   Copyright (c) 2017 Oliver Oxtoby (CSIR) <ooxtoby@csir.co.za>          *
-# *   Copyright (c) 2019-2023 Oliver Oxtoby <oliveroxtoby@gmail.com>        *
-# *   Copyright (c) 2022 Jonathan Bergh <bergh.jonathan@gmail.com>          *
+# *   Copyright (c) 2019-2024 Oliver Oxtoby <oliveroxtoby@gmail.com>        *
+# *   Copyright (c) 2022-2024 Jonathan Bergh <bergh.jonathan@gmail.com>     *
 # *                                                                         *
 # *   This program is free software: you can redistribute it and/or modify  *
 # *   it under the terms of the GNU Lesser General Public License as        *
@@ -39,11 +39,21 @@ class CfdCaseWriterFoam:
 
         self.analysis_obj = analysis_obj
         self.solver_obj = CfdTools.getSolver(analysis_obj)
+        if not self.solver_obj:
+            raise RuntimeError("No solver object was found in analysis " + analysis_obj.Label)
         self.physics_model = CfdTools.getPhysicsModel(analysis_obj)
+        if not self.physics_model:
+            raise RuntimeError("No physics model was found in analysis " + analysis_obj.Label)
         self.mesh_obj = CfdTools.getMesh(analysis_obj)
+        if not self.mesh_obj:
+            raise RuntimeError("No mesh object was found in analysis " + analysis_obj.Label)
         self.material_objs = CfdTools.getMaterials(analysis_obj)
+        if not self.material_objs:
+            raise RuntimeError("No material properties were found in analysis " + analysis_obj.Label)
         self.bc_group = CfdTools.getCfdBoundaryGroup(analysis_obj)
         self.initial_conditions = CfdTools.getInitialConditions(analysis_obj)
+        if not self.initial_conditions:
+            raise RuntimeError("No initial conditions object was found in analysis " + analysis_obj.Label)
         self.reporting_functions = CfdTools.getReportingFunctionsGroup(analysis_obj)
         self.scalar_transport_objs = CfdTools.getScalarTransportFunctionsGroup(analysis_obj)
         self.porous_zone_objs = CfdTools.getPorousZoneObjects(analysis_obj)
@@ -59,8 +69,15 @@ class CfdCaseWriterFoam:
     def writeCase(self):
         """ writeCase() will collect case settings, and finally build a runnable case. """
         cfdMessage("Writing case to folder {}\n".format(self.working_dir))
-        if not os.path.exists(self.working_dir):
-            raise IOError("Path " + self.working_dir + " does not exist.")
+        # Try to create the path
+        try:
+            os.makedirs(self.working_dir)
+        except OSError as exc:
+            import errno
+            if exc.errno == errno.EEXIST and os.path.isdir(self.working_dir):
+                pass
+            else:
+                raise
 
         # Perform initialisation here rather than __init__ in case of path changes
         self.case_folder = os.path.join(self.working_dir, self.solver_obj.InputCaseName)
@@ -112,6 +129,8 @@ class CfdCaseWriterFoam:
         if CfdTools.DockerContainer.usedocker:
             mesh_d = self.settings['meshDir'].split(os.sep)
             self.settings['meshDir'] = '/tmp/{}'.format(mesh_d[-1])
+        else:
+            self.settings['meshDir'] = self.settings['meshDir'].replace('\\', '/')
 
         self.processSystemSettings()
         self.processSolverSettings()
@@ -156,7 +175,7 @@ class CfdCaseWriterFoam:
         cfdMessage("Successfully wrote case to folder {}\n".format(self.working_dir))
         if self.progressCallback:
             self.progressCallback("Case written successfully")
-            
+
         return True
 
     def getSolverName(self):
@@ -218,12 +237,17 @@ class CfdCaseWriterFoam:
         solver_settings['SolverName'] = self.getSolverName()
 
     def processSystemSettings(self):
+        installation_path = CfdTools.getFoamDir()
         system_settings = self.settings['system']
         system_settings['FoamRuntime'] = CfdTools.getFoamRuntime()
         system_settings['CasePath'] = self.case_folder
-        system_settings['FoamPath'] = CfdTools.getFoamDir()
-        if CfdTools.getFoamRuntime() != 'WindowsDocker':
-            system_settings['TranslatedFoamPath'] = CfdTools.translatePath(CfdTools.getFoamDir())
+        system_settings['FoamPath'] = installation_path
+        system_settings['TranslatedFoamPath'] = CfdTools.translatePath(installation_path)
+        system_settings['hostFileRequired'] = self.analysis_obj.UseHostfile
+        if system_settings['hostFileRequired'] == True:
+            system_settings['hostFileName'] = self.analysis_obj.HostfileName
+        if CfdTools.getFoamRuntime() == "MinGW":
+            system_settings['FoamVersion'] = os.path.split(installation_path)[-1].lstrip('v')
 
     def setupMesh(self, updated_mesh_path, scale):
         if os.path.exists(updated_mesh_path):
@@ -428,10 +452,12 @@ class CfdCaseWriterFoam:
                     sum_alpha += alpha
             initial_values['VolumeFractions'] = alphas_new
 
+        if initial_values['PotentialFlow']:
+            if settings['solver']['SolverName'] in ['SRFSimpleFoam']:
+                raise RuntimeError("Selected solver does not support potential flow velocity initialisation.")
         if initial_values['PotentialFlowP']:
-            if settings['solver']['SolverName'] not in ['simpleFoam', 'porousSimpleFoam', 'pimpleFoam', 'SRFSimpleFoam',
-                                                        'hisa']:
-                raise RuntimeError("Selected solver does not support potential pressure initialisation.")
+            if settings['solver']['SolverName'] not in ['simpleFoam', 'porousSimpleFoam', 'pimpleFoam', 'hisa']:
+                raise RuntimeError("Selected solver does not support potential flow pressure initialisation.")
 
         physics = settings['physics']
 
@@ -664,11 +690,24 @@ class CfdCaseWriterFoam:
 
     def processInitialisationZoneProperties(self):
         settings = self.settings
-        if settings['solver']['SolverName'] in ['interFoam', 'multiphaseInterFoam']:
-            # Make sure the first n-1 alpha values exist, and write the n-th one
-            # consistently for multiphaseInterFoam
-            for zone_name in settings['initialisationZones']:
-                z = settings['initialisationZones'][zone_name]
+        
+        for zone_name in settings['initialisationZones']:
+            z = settings['initialisationZones'][zone_name]
+
+            if not z['VolumeFractionSpecified']:
+                del z['VolumeFractions']
+            if not z['VelocitySpecified']:
+                del z['Ux']
+                del z['Uy']
+                del z['Uz']
+            if not z['PressureSpecified']:
+                del z['Pressure']
+            if not z['TemperatureSpecified']:
+                del z['Temperature']
+
+            if settings['solver']['SolverName'] in ['interFoam', 'multiphaseInterFoam']:
+                # Make sure the first n-1 alpha values exist, and write the n-th one
+                # consistently for multiphaseInterFoam
                 sum_alpha = 0.0
                 if 'VolumeFractions' in z:
                     alphas_new = {}
@@ -682,6 +721,10 @@ class CfdCaseWriterFoam:
                             alphas_new[alpha_name] = alpha
                             sum_alpha += alpha
                     z['VolumeFractions'] = alphas_new
+        
+            if settings['solver']['SolverName'] in ['simpleFoam', 'porousSimpleFoam', 'pimpleFoam', 'SRFSimpleFoam']:
+                if 'Pressure' in z:
+                    z['KinematicPressure'] = z['Pressure']/settings['fluidProperties'][0]['Density']
 
     def bafflesPresent(self):
         for b in self.bc_group:

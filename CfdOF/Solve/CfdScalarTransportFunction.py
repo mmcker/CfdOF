@@ -27,8 +27,9 @@ import os
 from CfdOF import CfdTools
 from CfdOF.CfdTools import addObjectProperty
 from pivy import coin
-from PySide2 import QtCore
+from PySide import QtCore
 
+from PySide.QtCore import QT_TRANSLATE_NOOP
 
 def makeCfdScalarTransportFunction(name="ScalarTransportFunction"):
     obj = FreeCAD.ActiveDocument.addObject("Part::FeaturePython", name)
@@ -46,9 +47,9 @@ class CommandCfdScalarTransportFunction:
     def GetResources(self):
         icon_path = os.path.join(CfdTools.getModulePath(), "Gui", "Icons", "scalartransport.svg")
         return {'Pixmap': icon_path,
-                'MenuText': QtCore.QT_TRANSLATE_NOOP("Cfd_ScalarTransportFunction",
+                'MenuText': QT_TRANSLATE_NOOP("CfdOF_ScalarTransportFunctions",
                                                      "Cfd scalar transport function"),
-                'ToolTip': QtCore.QT_TRANSLATE_NOOP("Cfd_ScalarTransportFunction",
+                'ToolTip': QT_TRANSLATE_NOOP("CfdOF_ScalarTransportFunctions",
                                                     "Create a scalar transport function")}
 
     def IsActive(self):

@@ -25,25 +25,30 @@ import sys
 
 
 class CfdOFWorkbench(Workbench):
-    """ CfdOF workbench object """
+    """CfdOF workbench object"""
+
     def __init__(self):
         import os
         from CfdOF import CfdTools
         from PySide import QtCore
         from CfdOF.CfdPreferencePage import CfdPreferencePage
 
+        translate = FreeCAD.Qt.translate
+        translations_path = os.path.join(CfdTools.getModulePath(), "Translations")
+        FreeCADGui.addLanguagePath(translations_path)
+        FreeCADGui.updateLocale()
+
         icon_path = os.path.join(CfdTools.getModulePath(), "Gui", "Icons", "cfd.svg")
         self.__class__.Icon = icon_path
-        self.__class__.MenuText = "CfdOF"
-        self.__class__.ToolTip = "CfdOF workbench"
+        self.__class__.MenuText = translate("Workbench", "CfdOF")
+        self.__class__.ToolTip = translate("Workbench", "CfdOF workbench")
 
         icons_path = os.path.join(CfdTools.getModulePath(), "Gui", "Icons")
         QtCore.QDir.addSearchPath("icons", icons_path)
         FreeCADGui.addPreferencePage(CfdPreferencePage, "CfdOF")
 
     def Initialize(self):
-        # Must import QtCore in this function, not at the beginning of this file for translation support
-        from PySide import QtCore
+        from PySide.QtCore import QT_TRANSLATE_NOOP
 
         from CfdOF.CfdAnalysis import CommandCfdAnalysis
         from CfdOF.Mesh.CfdMesh import CommandCfdMeshFromShape
@@ -59,52 +64,54 @@ class CfdOFWorkbench(Workbench):
             CommandDynamicMeshInterfaceRefinement, CommandDynamicMeshShockRefinement
         from CfdOF.PostProcess.CfdReportingFunction import CommandCfdReportingFunction
         from CfdOF.Solve.CfdScalarTransportFunction import CommandCfdScalarTransportFunction
+        from CfdOF.CfdOpenPreferencesPage import CommandCfdOpenPreferencesPage
         from CfdOF.CfdReloadWorkbench import CommandCfdReloadWorkbench
 
-        FreeCADGui.addCommand('Cfd_Analysis', CommandCfdAnalysis())
-        FreeCADGui.addCommand('Cfd_MeshFromShape', CommandCfdMeshFromShape())
-        FreeCADGui.addCommand('Cfd_MeshRegion', CommandMeshRegion())
-        FreeCADGui.addCommand('Cfd_DynamicMeshInterfaceRefinement', CommandDynamicMeshInterfaceRefinement())
-        FreeCADGui.addCommand('Cfd_DynamicMeshShockRefinement', CommandDynamicMeshShockRefinement())
-        FreeCADGui.addCommand('Cfd_GroupDynamicMeshRefinement', CommandGroupDynamicMeshRefinement())
-        FreeCADGui.addCommand('Cfd_PhysicsModel', CommandCfdPhysicsSelection())
-        FreeCADGui.addCommand('Cfd_FluidMaterial', CommandCfdFluidMaterial())
-        FreeCADGui.addCommand('Cfd_FluidBoundary', CommandCfdFluidBoundary())
-        FreeCADGui.addCommand('Cfd_InitialiseInternal', CommandCfdInitialiseInternalFlowField())
-        FreeCADGui.addCommand('Cfd_PorousZone', CommandCfdPorousZone())
-        FreeCADGui.addCommand('Cfd_InitialisationZone', CommandCfdInitialisationZone())
-        FreeCADGui.addCommand('Cfd_SolverControl', CommandCfdSolverFoam())
-        FreeCADGui.addCommand('Cfd_ReportingFunctions', CommandCfdReportingFunction())
-        FreeCADGui.addCommand('Cfd_ScalarTransportFunctions', CommandCfdScalarTransportFunction())
-        FreeCADGui.addCommand('Cfd_ReloadWorkbench', CommandCfdReloadWorkbench())
+        FreeCADGui.addCommand('CfdOF_Analysis', CommandCfdAnalysis())
+        FreeCADGui.addCommand('CfdOF_MeshFromShape', CommandCfdMeshFromShape())
+        FreeCADGui.addCommand('CfdOF_MeshRegion', CommandMeshRegion())
+        FreeCADGui.addCommand('CfdOF_DynamicMeshInterfaceRefinement', CommandDynamicMeshInterfaceRefinement())
+        FreeCADGui.addCommand('CfdOF_DynamicMeshShockRefinement', CommandDynamicMeshShockRefinement())
+        FreeCADGui.addCommand('CfdOF_GroupDynamicMeshRefinement', CommandGroupDynamicMeshRefinement())
+        FreeCADGui.addCommand('CfdOF_PhysicsModel', CommandCfdPhysicsSelection())
+        FreeCADGui.addCommand('CfdOF_FluidMaterial', CommandCfdFluidMaterial())
+        FreeCADGui.addCommand('CfdOF_FluidBoundary', CommandCfdFluidBoundary())
+        FreeCADGui.addCommand('CfdOF_InitialiseInternal', CommandCfdInitialiseInternalFlowField())
+        FreeCADGui.addCommand('CfdOF_PorousZone', CommandCfdPorousZone())
+        FreeCADGui.addCommand('CfdOF_InitialisationZone', CommandCfdInitialisationZone())
+        FreeCADGui.addCommand('CfdOF_SolverControl', CommandCfdSolverFoam())
+        FreeCADGui.addCommand('CfdOF_ReportingFunctions', CommandCfdReportingFunction())
+        FreeCADGui.addCommand('CfdOF_ScalarTransportFunctions', CommandCfdScalarTransportFunction())
+        FreeCADGui.addCommand('CfdOF_OpenPreferences', CommandCfdOpenPreferencesPage())
+        FreeCADGui.addCommand('CfdOF_ReloadWorkbench', CommandCfdReloadWorkbench())
 
-        cmdlst = ['Cfd_Analysis',
-                  'Cfd_MeshFromShape', 'Cfd_MeshRegion', 
-                  ("Dynamic mesh refinement", ['Cfd_DynamicMeshInterfaceRefinement','Cfd_DynamicMeshShockRefinement',]),
-                  ('Cfd_GroupDynamicMeshRefinement',),
-                  'Cfd_PhysicsModel', 'Cfd_FluidMaterial',
-                  'Cfd_FluidBoundary', 'Cfd_InitialiseInternal',
-                  'Cfd_InitialisationZone', 'Cfd_PorousZone',
-                  'Cfd_ReportingFunctions', 'Cfd_ScalarTransportFunctions',
-                  'Cfd_SolverControl']
+        cmdlst = ['CfdOF_Analysis',
+                  'CfdOF_MeshFromShape', 'CfdOF_MeshRegion',
+                  (QT_TRANSLATE_NOOP("Workbench", "Dynamic mesh refinement"),
+                   ['CfdOF_DynamicMeshInterfaceRefinement','CfdOF_DynamicMeshShockRefinement',]),
+                  ('CfdOF_GroupDynamicMeshRefinement',),
+                  'CfdOF_PhysicsModel', 'CfdOF_FluidMaterial',
+                  'CfdOF_FluidBoundary', 'CfdOF_InitialiseInternal',
+                  'CfdOF_InitialisationZone', 'CfdOF_PorousZone',
+                  'CfdOF_ReportingFunctions', 'CfdOF_ScalarTransportFunctions',
+                  'CfdOF_SolverControl']
 
         for cmd in cmdlst:
             if isinstance(cmd, tuple):
                 if len(cmd) == 1:
-                    self.appendToolbar(str(QtCore.QT_TRANSLATE_NOOP("Cfd", "CfdOF")), [cmd[0]])
+                    self.appendToolbar(QT_TRANSLATE_NOOP("Workbench", "CfdOF"), [cmd[0]])
                 else:
-                    self.appendMenu([str(QtCore.QT_TRANSLATE_NOOP("Cfd", "&CfdOF")), cmd[0]], cmd[1])
+                    self.appendMenu([QT_TRANSLATE_NOOP("Workbench", "&CfdOF"), cmd[0]], cmd[1])
             else:
-                self.appendMenu(str(QtCore.QT_TRANSLATE_NOOP("Cfd", "&CfdOF")), [cmd])
-                self.appendToolbar(str(QtCore.QT_TRANSLATE_NOOP("Cfd", "CfdOF")), [cmd])
+                self.appendMenu(QT_TRANSLATE_NOOP("Workbench", "&CfdOF"), [cmd])
+                self.appendToolbar(QT_TRANSLATE_NOOP("Workbench", "CfdOF"), [cmd])
 
-        self.appendMenu(str(QtCore.QT_TRANSLATE_NOOP("Cfd", "&CfdOF")), ['Cfd_ReloadWorkbench'])
+        self.appendMenu(QT_TRANSLATE_NOOP("Workbench", "&CfdOF"),
+                        ["CfdOF_OpenPreferences", "CfdOF_ReloadWorkbench"])
 
         from CfdOF import CfdTools
         prefs = CfdTools.getPreferencesLocation()
         CfdTools.DockerContainer.usedocker = FreeCAD.ParamGet(prefs).GetBool("UseDocker", 0)    
-
-        # TODO enable QtCore translation here
 
     def GetClassName(self):
         return "Gui::PythonWorkbench"

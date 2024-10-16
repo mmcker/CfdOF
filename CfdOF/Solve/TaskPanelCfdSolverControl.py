@@ -35,6 +35,7 @@ if FreeCAD.GuiUp:
     from PySide.QtCore import Qt
     from PySide.QtGui import QApplication
 
+from PySide.QtCore import QT_TRANSLATE_NOOP
 
 class TaskPanelCfdSolverControl:
     def __init__(self, solver_runner_obj):
@@ -93,7 +94,7 @@ class TaskPanelCfdSolverControl:
             self.form.l_time.setText('Time: ' + CfdTools.formatTimer(time.time() - self.Start))
 
     def getStandardButtons(self):
-        return int(QtGui.QDialogButtonBox.Close)
+        return QtGui.QDialogButtonBox.Close
 
     def reject(self):
         FreeCADGui.ActiveDocument.resetEdit()
@@ -188,9 +189,12 @@ class TaskPanelCfdSolverControl:
                         stderr_hook=self.gotErrorLines)
 
                     cart_mesh.error = False
-                    cmd = CfdTools.makeRunCommand('./Allmesh', cart_mesh.meshCaseDir, source_env=False)
+                    if CfdTools.getFoamRuntime() == "MinGW":
+                        cmd = CfdTools.makeRunCommand('Allmesh.bat', source_env=False)
+                    else:
+                        cmd = CfdTools.makeRunCommand('./Allmesh', cart_mesh.meshCaseDir, source_env=False)
                     env_vars = CfdTools.getRunEnvironment()
-                    self.solver_object.Proxy.solver_process.start(cmd, env_vars=env_vars)
+                    self.solver_object.Proxy.solver_process.start(cmd, working_dir=cart_mesh.meshCaseDir, env_vars=env_vars)
                     if self.solver_object.Proxy.solver_process.waitForStarted():
                         # Setting solve button to inactive to ensure that two instances of the same simulation aren't started
                         # simultaneously
@@ -222,7 +226,7 @@ class TaskPanelCfdSolverControl:
             "  cmd = solver_runner.getSolverCmd(solver_directory)\n" +
             "  env_vars = solver_runner.getRunEnvironment()\n" +
             "  solver_process = CfdConsoleProcess.CfdConsoleProcess(stdout_hook=solver_runner.processOutput)\n" +
-            "  solver_process.start(cmd, env_vars=env_vars)\n" +
+            "  solver_process.start(cmd, env_vars=env_vars, working_dir=solver_directory)\n" +
             "  solver_process.waitForFinished()\n")
         working_dir = CfdTools.getOutputPath(self.analysis_object)
         case_name = self.solver_object.InputCaseName
@@ -232,7 +236,7 @@ class TaskPanelCfdSolverControl:
         self.solver_object.Proxy.solver_process = CfdConsoleProcess(finished_hook=self.solverFinished,
                                                                     stdout_hook=self.gotOutputLines,
                                                                     stderr_hook=self.gotErrorLines)
-        self.solver_object.Proxy.solver_process.start(cmd, env_vars=env_vars)
+        self.solver_object.Proxy.solver_process.start(cmd, env_vars=env_vars, working_dir=solver_directory)
         if self.solver_object.Proxy.solver_process.waitForStarted():
             # Setting solve button to inactive to ensure that two instances of the same simulation aren't started
             # simultaneously

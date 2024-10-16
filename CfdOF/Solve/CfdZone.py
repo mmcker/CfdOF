@@ -3,7 +3,7 @@
 # *   Copyright (c) 2017 Oliver Oxtoby (CSIR) <ooxtoby@csir.co.za>          *
 # *   Copyright (c) 2017 Alfred Bogaers (CSIR) <abogaers@csir.co.za>        *
 # *   Copyright (c) 2017 Johan Heyns (CSIR) <jheyns@csir.co.za>             *
-# *   Copyright (c) 2019-2022 Oliver Oxtoby <oliveroxtoby@gmail.com>        *
+# *   Copyright (c) 2019-2024 Oliver Oxtoby <oliveroxtoby@gmail.com>        *
 # *                                                                         *
 # *   This program is free software: you can redistribute it and/or modify  *
 # *   it under the terms of the GNU Lesser General Public License as        *
@@ -31,6 +31,7 @@ if FreeCAD.GuiUp:
 from CfdOF import CfdTools
 from CfdOF.CfdTools import addObjectProperty
 
+from PySide.QtCore import QT_TRANSLATE_NOOP
 
 # Constants
 POROUS_CORRELATIONS = ['DarcyForchheimer', 'Jakob']
@@ -65,9 +66,9 @@ class CommandCfdPorousZone:
     def GetResources(self):
         icon_path = os.path.join(CfdTools.getModulePath(), "Gui", "Icons", "porous.svg")
         return {'Pixmap': icon_path,
-                'MenuText': QtCore.QT_TRANSLATE_NOOP("Cfd_PorousZone", "Porous zone"),
+                'MenuText': QT_TRANSLATE_NOOP("CfdOF_PorousZone", "Porous zone"),
                 'Accel': "",
-                'ToolTip': QtCore.QT_TRANSLATE_NOOP("Cfd_PorousZone", "Select and create a porous zone")}
+                'ToolTip': QT_TRANSLATE_NOOP("CfdOF_PorousZone", "Select and create a porous zone")}
 
     def IsActive(self):
         return CfdTools.getActiveAnalysis() is not None
@@ -85,9 +86,9 @@ class CommandCfdInitialisationZone:
     def GetResources(self):
         icon_path = os.path.join(CfdTools.getModulePath(), "Gui", "Icons", "alpha.svg")
         return {'Pixmap': icon_path,
-                'MenuText': QtCore.QT_TRANSLATE_NOOP("Cfd_InitialisationZone", "Initialisation zone"),
+                'MenuText': QT_TRANSLATE_NOOP("CfdOF_InitialisationZone", "Initialisation zone"),
                 'Accel': "",
-                'ToolTip': QtCore.QT_TRANSLATE_NOOP("Cfd_InitialisationZone",
+                'ToolTip': QT_TRANSLATE_NOOP("CfdOF_InitialisationZone",
                                                     "Select and create an initialisation zone")}
 
     def IsActive(self):
@@ -169,6 +170,10 @@ class CfdZone:
                               "Initialisation zone", "Whether the zone initialises pressure")
             addObjectProperty(obj, 'Pressure', '0 kg/m/s^2', "App::PropertyPressure",
                               "Initialisation zone", "Static pressure")
+            addObjectProperty(obj, "TemperatureSpecified", False, "App::PropertyBool",
+                              "Initialisation zone", "Whether the zone initialises temperature")
+            addObjectProperty(obj, 'Temperature', '293 K', "App::PropertyTemperature",
+                              "Initialisation zone", "Temperature")
             addObjectProperty(obj, "VolumeFractionSpecified", True, "App::PropertyBool",
                               "Initialisation zone", "Whether the zone initialises volume fraction")
             addObjectProperty(obj, "VolumeFractions", {}, "App::PropertyMap",
