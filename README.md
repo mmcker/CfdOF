@@ -218,7 +218,7 @@ assistance will be required to setup a container.  Please leave a message on the
 The preferred docker run-time for Windows is via [podman](https://podman.io/) as currently this provides fast filesystem integration.
 [Docker Desktop](https://www.docker.com/products/docker-desktop/) may also be used.
 
-1. Install [podman](https://github.com/containers/podman/releases/download/v4.2.1/podman-v4.2.1.msi) (or [docker desktop](https://www.docker.com/products/docker-desktop/)).
+1. Install [podman](https://github.com/containers/podman/releases) (or [docker desktop](https://www.docker.com/products/docker-desktop/)).
 2. If using podman, open a cmd window and issue the following commands:
    * `podman machine init`
    * `podman machine start`
@@ -234,7 +234,7 @@ The preferred docker run-time for Windows is via [podman](https://podman.io/) as
 7. Press the _Run dependency checker_ button.
 
 ##### Docker on Linux
-1. Install docker using these [instructions](https://www.linuxtechi.com/install-docker-engine-on-debian/) (or similar).
+1. Install docker using these [instructions](https://www.linuxtechi.com/install-docker-engine-on-debian/) (or similar). Ensure the user has permission to run docker commands - typically the user is added to the docker group.
 2. Install paraview as per the package installation instructions for your distribution
    (for example `sudo apt-get install paraview` on debian).
 3. Edit &rarr; Preferences &rarr; CfdOF: Select _Use docker_.
@@ -298,7 +298,7 @@ and the [Council for Scientific and Industrial Research](https://www.csir.co.za)
 * Qingfeng Xia (2015)
 * Thomas Schrader (2017-) <info@schraderundschrader.de>
 * Michael Hindley (2016)
-* Mark Mackenzie (CNF, 2022)
+* Mark Mackenzie [Forum: @markrmau]
 * Katy Akmal (2022) [Forum: @KAKM]
 * Adrian Insaurralde (2022)
 * Klaus Sembritzki (2017)
